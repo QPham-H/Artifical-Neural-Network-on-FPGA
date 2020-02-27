@@ -1,0 +1,20 @@
+module Classifier (input [31:0] Z,
+						input  Clk,
+						output Hw);
+
+logic Hw_in, Out;						
+
+always_ff @ (posedge Clk)
+begin
+		Hw <= Hw_in;
+end
+
+always_comb
+begin
+	if(Z<=0)
+		Hw_in = 0;
+	else
+		Hw_in = 1;
+end
+
+endmodule

@@ -1,0 +1,22 @@
+module Weights(input [7:0] delta_w,
+					input Clk, SWE, RST, Update,
+					output [7:0] w_out);
+						
+logic [127999:0] Xout;
+logic [7:0] sum;
+assign delw_int = delta_w;
+assign sum = delta_w + w_out;
+
+	 always_ff @ (posedge Clk)
+    begin
+	 	 if (RST)
+			Xout <= 128000'h0;
+		 else if (SWE)
+			Xout <= { Xout[7:0], Xout[127999:8] };
+		 else if (Update)
+			Xout <= {sum, Xout[127999:8] };
+    end
+
+assign w_out = Xout[7:0];
+
+endmodule

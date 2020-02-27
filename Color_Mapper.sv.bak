@@ -1,0 +1,109 @@
+module Color_Mapper ( input [9:0] oVGA_R, oVGA_B, oVGA_G,
+										  Draw_X, Draw_Y,
+							 output [7:0] VGA_Red, VGA_Blue, VGA_Green, x_values);
+										  
+
+	 parameter [9:0] Box_X_Center=320;  // Center position on the X axis
+    parameter [9:0] Box_Y_Center=240;  // Center position on the Y axis
+    parameter [9:0] Box_X_Width=50;
+    parameter [9:0] Box_Y_Height=80;
+    parameter [9:0] Box_Size=4;        // Box size 
+	 parameter [7:0] threshold = 125;
+	
+    logic box_on, inside_box;
+    logic [7:0] Red, Green, Blue, bw_R, bw_G, bw_B;
+     
+	 // To use in algebic expressions (specifically multiplication)
+    int X_Draw, Y_Draw, Size, Width, Height, X_Center, Y_Center, vga_R_int, vga_B_int, vga_G_int, average_color;
+    //assign DistX = Draw_X - Box_X_Center;
+    //assign DistY = Draw_Y - Box_Y_Center
+	 assign vga_R_int = oVGA_R;
+	 assign vga_B_int = oVGA_B;
+	 assign vga_G_int = oVGA_G;
+	 assign X_Draw = Draw_X;
+	 assign Y_Draw = Draw_Y;
+    assign Size = Box_Size;
+	 assign Width = Box_X_Width;
+	 assign Height = Box_Y_Height;
+	 assign X_Center = Box_X_Center;
+	 assign Y_Center = Box_Y_Center;
+	 
+	 assign average_color = (vga_R_int + vga_B_int + vga_G_int)/3;
+    
+    assign VGA_Red = Red;
+    assign VGA_Green = Green;
+    assign VGA_Blue = Blue;
+    
+    // Compute whether the pixel corresponds to ball or background
+    always_comb
+    begin : can_draw_box
+		  // Left Border
+        if ( (X_Draw + Width + Size) >= X_Center && (X_Draw + Width) <= X_Center && (Y_Draw + Height + Size) >= Y_Center && Y_Draw <= (Y_Center + Height + Size) ) 
+            box_on = 1'b1;
+		  // Right Border
+		  else if ( X_Draw >= (X_Center + Width) && X_Draw <= (X_Center + Width + Size) && (Y_Draw + Height + Size) >= Y_Center && Y_Draw <= (Y_Center + Height + Size) )
+				box_on = 1'b1;
+		  // Top Border
+		  else if ( (Y_Draw + Height + Size) >= Y_Center && (Y_Draw + Height) <= Y_Center && X_Draw <= (X_Center + Width + Size) && (X_Draw + Width + Size) >= X_Center)
+				box_on = 1'b1;
+		  // Bottom Border
+		  else if ( Y_Draw >= (Y_Center + Height) && Y_Draw <= (Y_Center + Height + Size) && X_Draw <= (X_Center + Width + Size) && (X_Draw + Width + Size) >= X_Center )
+				box_on = 1'b1;
+		  else 
+            box_on = 1'b0;
+    end
+
+assign x_values = x_values_in;
+	 
+	 always_comb
+    begin : black_and_white_inside
+		  // Left Border
+        if ( (X_Draw + Width ) >= X_Center && X_Draw <= (X_Center + Width) && (Y_Draw + Height) >= Y_Center && Y_Draw <= (Y_Center + Height) ) 
+		  begin
+            inside_box = 1'b1;
+		  end
+		  else 
+            inside_box = 1'b0;
+    end
+    
+    // Assign color based on drawing coordinates
+    always_comb
+    begin : RGB_Display
+	 x_values_in = 8'h00;
+        if ((box_on == 1'b1)) 
+        begin
+            // White box
+            Red = 8'h00;
+            Green = 8'hff;
+            Blue = 8'h00; //8'h7f - {1'b0, Draw_X[9:3]};
+        end
+        else if (inside_box == 1'b1)
+				/*begin
+					Red = average_color;
+					Green = average_color;
+					Blue = average_color;
+				end*/
+				if(average_color <= threshold)
+				begin
+					Red = 8'h00;
+					Green = 8'h00;
+					Blue = 8'h00;
+					x_values_in = 8'h0;
+				end
+				else
+				begin
+					Red = 8'hff;
+					Green = 8'hff;
+					Blue = 8'hff;
+					x_values_in = 8'h01;
+				end
+		  else
+        begin
+            // Background is camera input
+            Red = oVGA_R[9:2]; 
+            Green = oVGA_G[9:2];
+            Blue = oVGA_B[9:2];
+        end
+    end 
+
+endmodule
